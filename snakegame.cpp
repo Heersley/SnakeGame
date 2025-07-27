@@ -6,9 +6,9 @@
 #include <ctime>
 #include <windows.h>
 #include <chrono>
-#define   Yin_Li_Kun      return 
+
 char direction = 'D';  
-int x,y;
+int x,y,speed = 200 ,difficult = 0; 
 int point = 0;
 const int width = 20;
 const int height = 20;
@@ -18,19 +18,20 @@ const int right = 10 + width;
 const int bottom = 10 + height;
 char map[height][width]={};
 auto last_move = std::chrono::system_clock::now();
-const int move = 200;
+int move = speed;//蛇的初速度,添加难度qwq
+
 
 
 struct FoodPosition
 {
     int x,y;
 };
-void gotoxy(short x, short y) 
-{
+ void gotoxy(short x, short y) 
+ {
     COORD pos = { x, y };
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), pos);
-}
-struct SnakeBody
+ }
+ struct SnakeBody
 {
     int x,y;
 };
@@ -71,6 +72,17 @@ void food_generate()
     static std::uniform_int_distribution<int> distributiony(1,height-2);
     newfood.x = distributionx(generator);
     newfood.y = distributiony(generator);
+    //添加防止食物和蛇身重合判定
+    for(auto it = snakebody.begin();it!= snakebody.end();++it)
+    {
+        if(newfood.x == it->x && newfood.y == it->y)
+        {
+            food_generate(); 
+            return;
+        }
+
+
+    }
     food.push_back(newfood);
 }
 //地图边界,以及蛇的初始化
@@ -103,13 +115,13 @@ void map_update(int width,int height)
         }
 
 
-            //更新食物(食物位置放这似不妥)
+    //更新食物(食物位置放这似不妥)
     for(auto &f :food)
         {
         map[f.y][f.x] = '*'; 
         }
 } 
-        // 更新蛇的长度,同时把食物也更新掉
+// 更新蛇的长度,同时把食物也更新掉
 void update()
 {
     bool eatfood = false;
@@ -134,6 +146,7 @@ void update()
         }
        
 }
+
 void map_print()
 {
     gotoxy(0,0); 
@@ -146,8 +159,8 @@ void map_print()
         std::cout<<std::endl;
     }
 }
-        //形成游戏窗口
-        void window(int left, int top, int right, int bottom);
+//形成游戏窗口
+void window(int left, int top, int right, int bottom);
 
 void mani_direction() 
 {
@@ -160,6 +173,8 @@ void mani_direction()
     if(GetAsyncKeyState('D') & 0x8000 && direction != 'A') 
     direction = 'D';
 }
+
+
 void move666() 
 {
     if(direction == 'W') 
@@ -171,6 +186,8 @@ void move666()
     if(direction == 'D') 
     snakehead.x++;
 }
+
+//游戏结束
 void gameover()
 {
 
@@ -179,6 +196,7 @@ void gameover()
     {
       std::cout<<"Game Over"<<std::endl;
       throw std::runtime_error("Game Over");
+      Sleep(3000);
     }
     else if(snakehead.x == snakebody.front().x && 
     snakehead.y == snakebody.front().y)
@@ -193,25 +211,66 @@ void gameover()
         {
             std::cout<<"Game Over"<<std::endl;
             throw std::runtime_error("Game Over");
+           
         }
     }
 
 }
+
+
 void Hide()
 {
     CONSOLE_CURSOR_INFO cursor_info = {1, 0}; 
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), {0,0}); 
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursor_info);
 }
+
+//游戏难度
+void difficulty()
+{
+    std::cout<< "Choose your difficulty(1~5) :";
+    std::cin>> difficult;
+    switch (difficult)
+    {
+        case 1 :
+        speed = 1000;
+        break;
+        case 2 :
+        speed = 800;
+        break;
+        case 3 :
+        speed = 600;
+        break;
+        case 4 :
+        speed = 400;
+        break;
+        case 5 :
+        speed = 200;
+        break;
+    
+    default:
+        std::cout<<"Invalid input"<<std::endl;
+        difficulty();
+        break;
+    }
+
+    move = speed;
+}
+
+
 int main()
-{      
+{   
+
+    difficulty();
     Hide();   
     snakehead_generate();  
     food_generate();
     body_generate();
-    
-    while(true)
-    { 
+
+    try
+    {
+        while(true)
+        { 
         mani_direction();
         auto now = std::chrono::system_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - last_move);
@@ -223,11 +282,19 @@ int main()
             map_update(width, height);
             map_print();
             last_move= now;
-            std::cout<<"你的分数是:"<<point<<std::endl;
+            std::cout<<"Points:"<<point<<'\n';
         }
        
-        Sleep(5); 
+        Sleep(20); 
+        }
     }
-    Yin_Li_Kun 0;
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        Sleep(3000);
+    }
+    
+    system("pause");
+    return 0;
 }
 //鲁棒性很强,暴赞！
